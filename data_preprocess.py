@@ -1,80 +1,65 @@
 import numpy as np
-import librosa, librosa.display
-import matplotlib.pyplot as plt
+import librosa.display
+import argparse
+from pathlib import Path
 
-FIG_SIZE = (15,10)
+HOP_LENGTH = 512
+N_FFT = 2048
+N_MFCC = 13
+DATA_ROOT = "./train/audio/"
 
-file = "D:\\arculatok\\arculatok\\data\\train\\audio\\wow\\0a7c2a8d_nohash_0.wav"
+def parse_file_list(path_to_list):
+    file_list = []
+    with open(path_to_list, 'r') as f:
+        for file_path in f:
+            file_list.append(file_path.rstrip())
+    return file_list
 
 
-signal, sample_rate = librosa.load(file, sr=5000)
+def preprocess(file_list, sample_rate, folder):
+    for input_path in file_list:
+        signal, sample_rate = librosa.load(DATA_ROOT + input_path, sample_rate)
+        mfccs = librosa.feature.mfcc(signal, sample_rate, n_fft=N_FFT, hop_length=HOP_LENGTH, n_mfcc=N_MFCC)
+        word_folder = input_path.split('/')[0]
+        Path(folder + word_folder).mkdir(parents=True, exist_ok=True)
+        np.savetxt(folder + input_path, mfccs, delimiter=";")
 
-plt.figure(figsize=FIG_SIZE)
-librosa.display.waveplot(signal, sample_rate, alpha=0.4)
-plt.xlabel("Time (s)")
-plt.ylabel("Amplitude")
-plt.title("Waveform")
 
+if __name__ == "__main__":
+    arg_parser = argparse.ArgumentParser(description="Data preprocessor script for speech recognition"
+                                                     "machine learning project.")
+    arg_parser.add_argument("--train_list",
+                            "-t",
+                            metavar="FILE",
+                            dest="train_list",
+                            required=True,
+                            help="Specifies the files used in training..")
+    arg_parser.add_argument("--val_list",
+                            "-v",
+                            metavar="FILE",
+                            dest="val_list",
+                            required=True,
+                            help="Specifies the files used in validation..")
+    arg_parser.add_argument("--sample_rate",
+                            "-s",
+                            metavar="int",
+                            dest="sample_rate",
+                            type=int,
+                            required=False,
+                            default=22050,
+                            help="Specifies the sample rate..")
+    args = arg_parser.parse_args()
 
-fft = np.fft.fft(signal)
+    train_list = parse_file_list(args.train_list)
+    val_list = parse_file_list(args.val_list)
+    sample_rate = args.sample_rate
 
-spectrum = np.abs(fft)
+    train_folder = "./train_processed/"
+    val_folder = "./val_processed/"
 
-f = np.linspace(0, sample_rate, len(spectrum))
+    Path(train_folder).mkdir(parents=True, exist_ok=True)
+    Path(val_folder).mkdir(parents=True, exist_ok=True)
 
-left_spectrum = spectrum[:int(len(spectrum)/2)]
-left_f = f[:int(len(spectrum)/2)]
-
-plt.figure(figsize=FIG_SIZE)
-plt.plot(left_f, left_spectrum, alpha=0.4)
-plt.xlabel("Frequency")
-plt.ylabel("Magnitude")
-plt.title("Power spectrum")
-
-hop_length = 512
-n_fft = 2048
-
-hop_length_duration = float(hop_length)/sample_rate
-n_fft_duration = float(n_fft)/sample_rate
-
-print("STFT hop length duration is: {}s".format(hop_length_duration))
-print("STFT window duration is: {}s".format(n_fft_duration))
-
-stft = librosa.stft(signal, n_fft=n_fft, hop_length=hop_length)
-
-spectrogram = np.abs(stft)
-
-plt.figure(figsize=FIG_SIZE)
-librosa.display.specshow(spectrogram, sr=sample_rate, hop_length=hop_length)
-plt.xlabel("Time")
-plt.ylabel("Frequency")
-plt.colorbar()
-plt.title("Spectrogram")
-
-log_spectrogram = librosa.amplitude_to_db(spectrogram)
-
-plt.figure(figsize=FIG_SIZE)
-librosa.display.specshow(log_spectrogram, sr=sample_rate, hop_length=hop_length)
-plt.xlabel("Time")
-plt.ylabel("Frequency")
-plt.colorbar(format="%+2.0f dB")
-plt.title("Spectrogram (dB)")
-
-MFCCs = librosa.feature.mfcc(signal, sample_rate, n_fft=n_fft, hop_length=hop_length, n_mfcc=13)
-
-plt.figure(figsize=FIG_SIZE)
-librosa.display.specshow(MFCCs, sr=sample_rate, hop_length=hop_length)
-plt.xlabel("Time")
-plt.ylabel("MFCC coefficients")
-plt.colorbar()
-plt.title("MFCCs")
-
-npsignal = np.asarray(signal)
-
-#np.savetxt("asd.csv", npsignal, delimiter="\t")
-
-print(npsignal.shape)
-print(spectrogram.shape)
-
-plt.show()
+    preprocess(train_list, sample_rate, train_folder)
+    preprocess(val_list, sample_rate, val_folder)
 
