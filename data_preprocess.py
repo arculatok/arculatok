@@ -22,7 +22,7 @@ def preprocess(file_list, sample_rate, folder):
         mfccs = librosa.feature.mfcc(signal, sample_rate, n_fft=N_FFT, hop_length=HOP_LENGTH, n_mfcc=N_MFCC)
         word_folder = input_path.split('/')[0]
         Path(folder + word_folder).mkdir(parents=True, exist_ok=True)
-        np.savetxt(folder + input_path, mfccs, delimiter=";")
+        np.savetxt(folder + input_path[:-4] + ".csv", mfccs, delimiter=";")
 
 
 if __name__ == "__main__":
@@ -40,6 +40,12 @@ if __name__ == "__main__":
                             dest="val_list",
                             required=True,
                             help="Specifies the files used in validation..")
+    arg_parser.add_argument("--",
+                            "-e",
+                            metavar="FILE",
+                            dest="test_list",
+                            required=True,
+                            help="Specifies the files used in testing..")
     arg_parser.add_argument("--sample_rate",
                             "-s",
                             metavar="int",
@@ -52,14 +58,18 @@ if __name__ == "__main__":
 
     train_list = parse_file_list(args.train_list)
     val_list = parse_file_list(args.val_list)
+    test_list = parse_file_list(args.test_list)
     sample_rate = args.sample_rate
 
     train_folder = "./train_processed/"
     val_folder = "./val_processed/"
+    test_folder = "./test_processed/"
 
     Path(train_folder).mkdir(parents=True, exist_ok=True)
     Path(val_folder).mkdir(parents=True, exist_ok=True)
+    Path(test_folder).mkdir(parents=True, exist_ok=True)
 
     preprocess(train_list, sample_rate, train_folder)
     preprocess(val_list, sample_rate, val_folder)
+    preprocess(test_list, sample_rate, test_folder)
 
