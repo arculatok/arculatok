@@ -2,6 +2,7 @@ import numpy as np
 import librosa.display
 import argparse
 from pathlib import Path
+from sklearn.preprocessing import MinMaxScaler
 
 HOP_LENGTH = 512
 N_FFT = 2048
@@ -20,9 +21,11 @@ def preprocess(file_list, sample_rate, folder):
     for input_path in file_list:
         signal, sample_rate = librosa.load(DATA_ROOT + input_path, sample_rate)
         mfccs = librosa.feature.mfcc(signal, sample_rate, n_fft=N_FFT, hop_length=HOP_LENGTH, n_mfcc=N_MFCC)
+        scaler = MinMaxScaler()
+        transformed_mfccs = scaler.fit_transform(mfccs)
         word_folder = input_path.split('/')[0]
         Path(folder + word_folder).mkdir(parents=True, exist_ok=True)
-        np.savetxt(folder + input_path[:-4] + ".csv", mfccs, delimiter=";")
+        np.savetxt(folder + input_path[:-4] + ".csv", transformed_mfccs, delimiter=";")
 
 
 if __name__ == "__main__":
@@ -40,7 +43,7 @@ if __name__ == "__main__":
                             dest="val_list",
                             required=True,
                             help="Specifies the files used in validation..")
-    arg_parser.add_argument("--",
+    arg_parser.add_argument("--test_list",
                             "-e",
                             metavar="FILE",
                             dest="test_list",

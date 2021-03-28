@@ -3,6 +3,8 @@ import librosa
 import librosa.display
 import matplotlib.pyplot as plt
 import argparse
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
 
 FIG_SIZE = (15, 10)
 
@@ -93,5 +95,15 @@ if __name__ == "__main__":
     MFCCs = librosa.feature.mfcc(signal, sample_rate, n_fft=n_fft, hop_length=hop_length, n_mfcc=13)
 
     make_mfcc_plot(MFCCs, sample_rate, hop_length)
+
+    scaler = MinMaxScaler()
+    transformed_mfccs = scaler.fit_transform(MFCCs)
+
+    make_mfcc_plot(transformed_mfccs, sample_rate, hop_length)
+
+    scaler = StandardScaler()
+    transformed2_mfccs = scaler.fit_transform(MFCCs)
+
+    make_mfcc_plot(transformed2_mfccs, sample_rate, hop_length)
 
     plt.show()
